@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+{% block title %}Available images{% endblock %}
+{% block content %}
+
+<table>
+  <tr>
+    <th>Image</th>
+    <th>Size</th>
+    <th>Last modified</th>
+  </tr>
+
+  {% for image in images %}
+  <tr>
+    <td><a href="{{ image.access_url }}">{{ image.key }}</a></td>
+    <td>{{ image.size }}</td>
+    <td>{{ image.last_modified.strftime('%Y-%m-%d %H:%M:%S %Z') }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+{% endblock %}
