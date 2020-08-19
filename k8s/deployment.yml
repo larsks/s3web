@@ -1,0 +1,84 @@
+# Requires:
+#
+# - secret `s3web-secret` with `S3_ACCESS_KEY` and `S3_SECRET_KEY`
+# - configmap `s3web-config` with `S3_ENDPOINT`, `S3_BUCKET`, and
+#   `S3_ACCESS_ENDPOINT`
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-cache
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: image-cache
+  template:
+    metadata:
+      labels:
+        app: image-cache
+    spec:
+      containers:
+        - name: s3web
+          image: larsks/s3web:1.0.4
+          ports:
+            - containerPort: 8080
+          env:
+            - name: S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: s3web-secret
+                  key: S3_ACCESS_KEY
+            - name: S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: s3web-secret
+                  key: S3_SECRET_KEY
+            - name: S3_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: s3web-config
+                  key: S3_ENDPOINT
+            - name: S3_ACCESS_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: s3web-config
+                  key: S3_ACCESS_ENDPOINT
+            - name: S3_BUCKET
+              valueFrom:
+                configMapKeyRef:
+                  name: s3web-config
+                  key: S3_BUCKET
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: image-cache
+  name: image-cache
+spec:
+  ports:
+    - name: 8080-8080
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: image-cache
+  type: ClusterIP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  creationTimestamp: null
+  labels:
+    app: image-cache
+  name: image-cache
+spec:
+  port:
+    targetPort: 8080-8080
+  tls:
+    termination: edge
+  to:
+    kind: ""
+    name: image-cache
+    weight: null
