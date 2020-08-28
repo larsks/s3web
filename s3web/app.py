@@ -33,20 +33,29 @@ class S3Proxy:
             region_name=self.region,
         )
 
-        self.s3 = boto3.resource('s3', **s3_args)
-        self.bucket = self.s3.Bucket(self.bucket_name)
+        self.s3 = boto3.client('s3', **s3_args)
 
     def images(self):
-        for obj in self.bucket.objects.all():
-            obj.url = self.url_for(obj)
-            obj.access_url = self.access_url_for(obj)
+        res = self.s3.list_objects(Bucket=self.bucket_name)
+
+        for obj in res.get('Contents', []):
+            tags = self.s3.get_object_tagging(Bucket=self.bucket_name,
+                                              Key=obj['Key'])
+
+            obj['url'] = self.url_for(obj)
+            obj['access_url'] = self.access_url_for(obj)
+            obj['tags'] = {}
+
+            for tag in tags.get('TagSet', []):
+                obj['tags'][tag['Key']] = tag['Value']
+
             yield(obj)
 
     def url_for(self, obj):
-        return f'{self.endpoint}/{self.bucket.name}/{obj.key}'
+        return f'{self.endpoint}/{self.bucket_name}/{obj["Key"]}'
 
     def access_url_for(self, obj):
-        return f'{self.access_endpoint}/{self.bucket.name}/{obj.key}'
+        return f'{self.access_endpoint}/{self.bucket_name}/{obj["Key"]}'
 
 
 app = Flask(__name__)

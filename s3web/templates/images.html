@@ -7,13 +7,19 @@
     <th>Image</th>
     <th>Size</th>
     <th>Last modified</th>
+    <th>Source URL</th>
   </tr>
 
   {% for image in images %}
   <tr>
-    <td><a href="{{ image.access_url }}">{{ image.key }}</a></td>
-    <td>{{ image.size }}</td>
-    <td>{{ image.last_modified.strftime('%Y-%m-%d %H:%M:%S %Z') }}</td>
+    <td><a href="{{ image.access_url }}">{{ image.Key }}</a></td>
+    <td>{{ image.Size }}</td>
+    <td>{{ image.LastModified.strftime('%Y-%m-%d %H:%M:%S %Z') }}</td>
+    <td>
+      {% if image.tags.source_url is defined %}
+      <a href="{{ image.tags.source_url }}">{{ image.tags.source_url }}</a>
+      {% endif %}
+    </td>
   </tr>
   {% endfor %}
 </table>
