@@ -1,8 +1,8 @@
-import boto3
+import botocore.session
+import botocore.client
 import logging
 import os
 
-from botocore.client import Config
 from flask import Flask
 from flask import render_template
 
@@ -29,11 +29,12 @@ class S3Proxy:
             endpoint_url=self.endpoint,
             aws_access_key_id=self.access_key,
             aws_secret_access_key=self.secret_key,
-            config=Config(signature_version='s3v4'),
+            config=botocore.client.Config(signature_version='s3v4'),
             region_name=self.region,
         )
 
-        self.s3 = boto3.client('s3', **s3_args)
+        self.s3_session = botocore.session.get_session()
+        self.s3 = self.s3_session.create_client('s3', **s3_args)
 
     def images(self):
         res = self.s3.list_objects(Bucket=self.bucket_name)
