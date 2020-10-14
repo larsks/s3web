@@ -35,6 +35,10 @@ class S3Proxy:
             region_name=self.region,
         )
 
+        if (ca_bundle := os.environ.get('AWS_CA_BUNDLE')):
+            self.s3_args['verify'] = ca_bundle
+            app.logger.warning('using custom ca bundle: %s', ca_bundle)
+
         self.s3 = boto3.client('s3', **s3_args)
 
     def images(self):
