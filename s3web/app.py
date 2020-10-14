@@ -2,11 +2,13 @@ import boto3
 import logging
 import os
 
+from urllib.parse import urlunparse
+
 from botocore.client import Config
+from botocore.exceptions import ClientError
 from flask import Flask
 from flask import render_template
 
-LOG = logging.getLogger(__name__)
 default_region = 'us-east-1'
 
 
@@ -39,8 +41,11 @@ class S3Proxy:
         res = self.s3.list_objects(Bucket=self.bucket_name)
 
         for obj in res.get('Contents', []):
-            tags = self.s3.get_object_tagging(Bucket=self.bucket_name,
-                                              Key=obj['Key'])
+            try:
+                tags = self.s3.get_object_tagging(Bucket=self.bucket_name,
+                                                  Key=obj['Key'])
+            except ClientError:
+                tags = {}
 
             obj['url'] = self.url_for(obj)
             obj['access_url'] = self.access_url_for(obj)
@@ -59,12 +64,53 @@ class S3Proxy:
 
 
 app = Flask(__name__)
+
+if (aws_access_key_id := os.environ.get('AWS_ACCESS_KEY_ID')) is None:
+    raise ValueError('missing AWS_SECRET_ACCESS_KEY')
+
+if (aws_secret_access_key := os.environ.get('AWS_SECRET_ACCESS_KEY')) is None:
+    raise ValueError('missing AWS_SECRET_ACCESS_KEY')
+
+if (bucket_name := os.environ.get('BUCKET_NAME')) is None:
+    raise ValueError('missing BUCKET_NAME')
+
+if (bucket_endpoint := os.environ.get('BUCKET_ENDPOINT')) is None:
+
+    if (bucket_host := os.environ.get('BUCKET_HOST')) is None:
+        raise ValueError('BUCKET_HOST is undefined')
+
+    bucket_port = os.environ.get('BUCKET_PORT', '443')
+
+    if (bucket_scheme := os.environ.get('BUCKET_SCHEME')) is None:
+        if bucket_port == '443':
+            bucket_scheme = 'https'
+        elif bucket_port == '80':
+            bucket_scheme = 'http'
+        else:
+            raise ValueError('unable to determine schema from port number')
+
+    bucket_endpoint = urlunparse([
+        bucket_scheme,
+        f'{bucket_host}:{bucket_port}',
+        '/',
+        None,
+        None,
+        None
+    ])
+
+bucket_access_endpoint = os.environ.get('BUCKET_ACCESS_ENDPOINT')
+
+app.logger.warning('using s3 endpoint: %s', bucket_endpoint)
+if bucket_access_endpoint:
+    app.logger.warning('using access endpoint: %s', bucket_access_endpoint)
+app.logger.warning('using bucket: %s', bucket_name)
+
 api = S3Proxy(
-    os.environ.get('S3_ENDPOINT'),
-    os.environ.get('S3_ACCESS_ENDPOINT'),
-    os.environ.get('S3_ACCESS_KEY'),
-    os.environ.get('S3_SECRET_KEY'),
-    os.environ.get('S3_BUCKET'),
+    bucket_endpoint,
+    bucket_access_endpoint,
+    aws_access_key_id,
+    aws_secret_access_key,
+    bucket_name,
 )
 
 
@@ -72,3 +118,9 @@ api = S3Proxy(
 def index():
     images = api.images()
     return render_template('images.html', images=images)
+
+
+if __name__ != '__main__':
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
