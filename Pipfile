@@ -9,6 +9,7 @@ verify_ssl = true
 botocore = "*"
 boto3 = "*"
 flask = "*"
+gunicorn = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.8"
