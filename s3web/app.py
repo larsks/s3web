@@ -96,7 +96,7 @@ if (bucket_endpoint := os.environ.get('BUCKET_ENDPOINT')) is None:
     bucket_endpoint = urlunparse([
         bucket_scheme,
         f'{bucket_host}:{bucket_port}',
-        '/',
+        '',
         None,
         None,
         None
