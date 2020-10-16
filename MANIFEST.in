@@ -1,1 +1,2 @@
 graft s3web/templates
+graft s3web/static

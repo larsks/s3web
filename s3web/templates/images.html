@@ -8,7 +8,6 @@
     <th>Size</th>
     <th>Last modified</th>
     <th>Description</th>
-    <th>Source URL</th>
   </tr>
 
   {% for image in images %}
@@ -21,12 +20,6 @@
       {{ image.tags.description }}
       {% endif %}
     </td>
-    <td>
-      {% if image.tags.source_url is defined %}
-      <a href="{{ image.tags.source_url }}">{{ image.tags.source_url }}</a>
-      {% endif %}
-    </td>
-  </tr>
   {% endfor %}
 </table>
 

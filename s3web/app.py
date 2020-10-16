@@ -1,6 +1,7 @@
 import boto3
 import logging
 import os
+import pkg_resources
 
 from urllib.parse import urlunparse
 
@@ -67,7 +68,9 @@ class S3Proxy:
         return f'{self.access_endpoint}/{self.bucket_name}/{obj["Key"]}'
 
 
-app = Flask(__name__)
+static_folder = pkg_resources.resource_filename(__name__, 'static')
+app = Flask(__name__, static_folder=static_folder)
+app.logger.warning('using static_folder: %s', static_folder)
 
 if (aws_access_key_id := os.environ.get('AWS_ACCESS_KEY_ID')) is None:
     raise ValueError('missing AWS_SECRET_ACCESS_KEY')
