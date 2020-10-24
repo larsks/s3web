@@ -14,7 +14,7 @@
   {% for image in images %}
   <tr>
     <td><a href="{{ image.access_url }}">{{ image.tags.display_name|default(image.Key) }}</a></td>
-    <td>{{ image.Size }}</td>
+    <td>{{ image.tags.virtual_size|default(image.Size) }}</td>
     <td>{{ image.LastModified.strftime('%Y-%m-%d %H:%M:%S %Z') }}</td>
     <td>
       {{ image.tags.description|default('') }}
